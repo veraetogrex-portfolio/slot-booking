@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Slot Booking — veraetogrex_portfolio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Slot Booking · zero dependencies · github.com/veraetogrex-portfolio -->
+  <div class="sb-wash" aria-hidden="true"></div>
+
+  <section class="sb" id="booking" aria-label="Book a design review">
+    <div class="sb-box"></div>
+
+    <div class="sb-cols">
+      <div class="sb-col sb-meeting">
+        <div class="sb-avatar">SV</div>
+        <p class="sb-host">Sana Velez · Design lead</p>
+        <h1>Design review</h1>
+        <ul class="sb-meta">
+          <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>30 min</li>
+          <li><svg viewBox="0 0 24 24"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>Video call</li>
+          <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 2.6 14.4 0 17M12 3.5c-2.6 2.6-2.6 14.4 0 17"/></svg>UTC+1 · Lisbon</li>
+        </ul>
+        <p class="sb-agenda"><b>Agenda</b>Walk through the NWD onboarding flow before handoff to build.</p>
+      </div>
+
+      <div class="sb-col sb-calendar">
+        <div class="sb-month"><h2>November <span>2026</span></h2><span class="sb-tag">Pick a day</span></div>
+        <div class="sb-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+        <div class="sb-grid"><div class="sb-ghost"></div><div class="sb-disc"></div></div>
+      </div>
+
+      <div class="sb-col sb-slots">
+        <h2 class="sb-day">Tue, Nov 10</h2>
+        <p class="sb-sub" role="status">6 slots · 30 min</p>
+        <div class="sb-list"></div>
+      </div>
+    </div>
+
+    <div class="sb-booked" hidden>
+      <svg class="sb-badge" viewBox="0 0 132 132">
+        <circle cx="66" cy="66" r="60" class="sb-badge-bg"/>
+        <circle cx="66" cy="66" r="60" class="sb-ring" pathLength="100"/>
+        <path d="M41 68 L58 84 L92 49" class="sb-check" pathLength="100"/>
+      </svg>
+      <h2 class="sb-done">Booked</h2>
+      <p class="sb-with">Design review with <b>Sana Velez</b></p>
+      <p class="sb-when"><span class="sb-when-day"></span><i></i><span class="sb-when-time"></span></p>
+      <div class="sb-actions">
+        <button class="sb-add">Add to calendar</button>
+        <button class="sb-again">Book another</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>

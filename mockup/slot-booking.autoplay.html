@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T10 Slot Booking — pick a day, pick a slot, done</title>
+<link rel="stylesheet" href="_shared/nocturne.css">
+<style>
+  #stage{background:radial-gradient(ellipse 65% 60% at 50% 50%,#0E1018 0%,var(--void) 72%)}
+  .halo{position:absolute;left:50%;top:50%;width:1300px;height:820px;margin:-410px 0 0 -650px;border-radius:50%;pointer-events:none;z-index:0;
+    background:radial-gradient(closest-side,rgba(124,108,255,.10),rgba(124,108,255,0))}
+
+  /* morphing container */
+  .box{position:absolute;left:170px;top:130px;width:1100px;height:640px;border-radius:28px;z-index:1;
+    background:linear-gradient(180deg,#12141D 0%,#0D0E15 100%);
+    box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 1px 0 rgba(255,255,255,.08) inset,0 60px 120px -40px rgba(0,0,0,.85)}
+  .box .hud-corners{inset:-12px}
+  .cols{position:absolute;left:170px;top:130px;width:1100px;height:640px;z-index:2;display:flex}
+  .col{position:relative;height:100%}
+  .col + .col{border-left:1px solid var(--line)}
+
+  /* left — meeting card */
+  .c1{width:340px;padding:44px 40px}
+  .ava{position:relative;width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 26px var(--f-text);color:#fff;
+    background:linear-gradient(140deg,#7C6CFF,#3B2FB8);box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 14px 30px -10px rgba(124,108,255,.8)}
+  .ava::after{content:"";position:absolute;right:2px;bottom:2px;width:16px;height:16px;border-radius:50%;background:var(--ion);box-shadow:0 0 0 4px #12141D}
+  .host{margin-top:18px;font:500 18px var(--f-text);color:var(--text-2)}
+  .mt{margin-top:8px;font:600 44px/1.05 var(--f-text);letter-spacing:-.025em;color:var(--text)}
+  .meta{margin-top:30px;display:flex;flex-direction:column;gap:16px}
+  .meta div{display:flex;align-items:center;gap:14px;font:500 20px var(--f-text);color:var(--text)}
+  .meta svg{width:24px;height:24px;color:var(--pulse-soft);flex:none}
+  .desc{position:absolute;left:40px;right:40px;bottom:44px;font:400 17px/1.5 var(--f-text);color:var(--text-2)}
+  .desc b{font:500 13px var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);display:block;margin-bottom:8px}
+
+  /* center — calendar */
+  .c2{width:480px;padding:40px 18px 0 18px}
+  .mh{display:flex;align-items:baseline;justify-content:space-between;padding:0 12px}
+  .mh .m{font:600 30px var(--f-text);letter-spacing:-.015em}
+  .mh .y{color:var(--text-3);font-weight:500}
+  .mh .tz{font:500 13px var(--f-mono);letter-spacing:.14em;color:var(--text-3);text-transform:uppercase}
+  .wd{display:grid;grid-template-columns:repeat(7,1fr);margin-top:26px;font:500 13px var(--f-mono);letter-spacing:.14em;color:var(--text-3);text-align:center}
+  .cal{position:relative;display:grid;grid-template-columns:repeat(7,62px);grid-auto-rows:62px;gap:4px;justify-content:center;margin-top:14px}
+  .day{position:relative;z-index:1;width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:500 24px var(--f-text);color:var(--text);transition:color .2s,background .2s;outline:none}
+  .day.av::after{content:"";position:absolute;left:50%;bottom:9px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--pulse-soft);transition:opacity .2s}
+  .day.av{background:rgba(124,108,255,.07)}
+  .day.av.li-hover:not(.sel),.day.av:hover:not(.sel){background:rgba(124,108,255,.18)}
+  .day.off{color:#4A4D5C;cursor:default}
+  .day.out{color:#33353F;cursor:default}
+  .day.sel{color:#fff;font-weight:700;background:transparent}
+  .day.sel::after{opacity:0}
+  .day.today{box-shadow:0 0 0 1.5px rgba(255,255,255,.18) inset}
+  .day:focus-visible{box-shadow:0 0 0 2px var(--pulse-soft)}
+  .disc{position:absolute;left:0;top:0;width:62px;height:62px;border-radius:50%;z-index:0;pointer-events:none;will-change:transform;
+    background:radial-gradient(circle at 35% 30%,#9C90FF,var(--pulse-btn) 70%);box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 10px 30px -6px rgba(124,108,255,.9),0 0 40px -6px rgba(124,108,255,.7)}
+  .trail{position:absolute;left:0;top:0;width:62px;height:62px;border-radius:50%;z-index:0;pointer-events:none;border:2px solid var(--pulse);opacity:0}
+
+  /* right — slots */
+  .c3{width:280px;padding:44px 28px 0 28px}
+  .sh{font:600 26px var(--f-text);letter-spacing:-.01em;white-space:nowrap}
+  .ss{margin-top:6px;font:500 13px var(--f-mono);letter-spacing:.14em;color:var(--text-3);text-transform:uppercase}
+  .slots{margin-top:24px;display:flex;flex-direction:column;gap:12px}
+  .slot{position:relative;height:60px}
+  .slot .tm{position:absolute;left:0;top:0;height:60px;width:100%;border-radius:12px;font:600 24px var(--f-display);letter-spacing:.06em;color:var(--text);
+    background:rgba(255,255,255,.03);box-shadow:0 0 0 1.5px rgba(124,108,255,.38) inset;transition:width .42s var(--ease-out),background .2s,box-shadow .2s,color .2s;outline:none;z-index:1}
+  .slot .tm.li-hover,.slot .tm:hover{background:rgba(124,108,255,.12);box-shadow:0 0 0 1.5px rgba(124,108,255,.7) inset}
+  .slot .tm:focus-visible{box-shadow:0 0 0 2px #fff inset}
+  .slot .cf{position:absolute;right:0;top:0;height:60px;width:calc(50% - 5px);border-radius:12px;font:600 18px var(--f-text);color:#fff;background:var(--pulse-btn);
+    box-shadow:0 0 0 1px rgba(255,255,255,.14) inset,0 10px 26px -8px rgba(124,108,255,.9);opacity:0;transform:translateX(-70%) scale(.92);pointer-events:none;
+    transition:transform .46s var(--ease-back),opacity .25s;outline:none}
+  .slot .cf.li-hover,.slot .cf:hover{background:#7D6EFF}
+  .slot.sel .tm{width:calc(50% - 5px);background:#1B1A33;color:#fff;box-shadow:0 0 0 1.5px var(--pulse) inset}
+  .slot.sel .cf{opacity:1;transform:none;pointer-events:auto}
+
+  /* booked */
+  .booked{position:absolute;left:440px;top:150px;width:560px;height:600px;z-index:3;display:none;flex-direction:column;align-items:center;text-align:center;padding-top:62px}
+  .booked.on{display:flex}
+  .badge{position:relative;width:132px;height:132px}
+  .badge svg{position:absolute;inset:0}
+  .badge .glow{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 60px 6px rgba(63,224,208,.35);opacity:0}
+  .bk{margin-top:28px;font:700 60px/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--ion)}
+  .bw{margin-top:14px;font:500 21px var(--f-text);color:var(--text-2)}
+  .bw b{color:var(--text);font-weight:600}
+  .when{margin-top:26px;display:flex;align-items:center;gap:14px;height:64px;padding:0 24px;border-radius:14px;background:rgba(255,255,255,.04);box-shadow:0 0 0 1px var(--line-2) inset;font:600 26px var(--f-text);letter-spacing:-.01em}
+  .when i{width:1px;height:26px;background:var(--line-2)}
+  .when span{font-family:var(--f-display);letter-spacing:.04em}
+  .acts{margin-top:34px;display:flex;gap:14px}
+  .acts .btn{height:58px;font-size:18px}
+  .add{background:var(--ion);color:#05221F;box-shadow:0 12px 34px -12px rgba(63,224,208,.9)}
+  .add.li-hover,.add:hover{box-shadow:0 0 0 5px rgba(63,224,208,.18),0 12px 34px -10px rgba(63,224,208,1)}
+  .again.li-hover,.again:hover{background:rgba(255,255,255,.1)}
+  .bk-in > *{will-change:transform,opacity}
+
+  /* payoff: Ion floods the screen from the badge when the booking lands */
+  .flood{position:absolute;left:720px;top:278px;width:3000px;height:3000px;margin:-1500px 0 0 -1500px;border-radius:50%;z-index:0;pointer-events:none;opacity:0;will-change:transform,opacity;
+    background:radial-gradient(closest-side,rgba(63,224,208,.46),rgba(63,224,208,.22) 28%,rgba(63,224,208,.08) 58%,rgba(63,224,208,0))}
+  .bwave{position:absolute;left:0;top:0;width:132px;height:132px;border-radius:50%;border:2px solid var(--ion);opacity:0;pointer-events:none}
+  .box{transition:box-shadow .5s}
+  .box.won{box-shadow:0 0 0 1px rgba(63,224,208,.45) inset,0 0 0 1px rgba(63,224,208,.15),0 0 90px -10px rgba(63,224,208,.45),0 60px 120px -40px rgba(0,0,0,.85)}
+</style>
+</head>
+<body>
+<div id="stage" class="grid" data-title="T10 Slot Booking" data-url="veraetogrex-portfolio.github.io/book/design-review">
+  <div class="halo"></div>
+  <div class="flood" id="flood"></div>
+  <div class="box" id="box"><div class="hud-corners"></div></div>
+
+  <div class="cols" id="cols">
+    <div class="col c1">
+      <div class="ava">SV</div>
+      <div class="host">Sana Velez · Design lead</div>
+      <div class="mt">Design review</div>
+      <div class="meta">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>30 min</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>Video call</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 2.6 14.4 0 17M12 3.5c-2.6 2.6-2.6 14.4 0 17"/></svg>UTC+1 · Lisbon</div>
+      </div>
+      <div class="desc"><b>Agenda</b>Walk through the NWD onboarding flow before handoff to build.</div>
+    </div>
+
+    <div class="col c2">
+      <div class="mh"><div class="m">November <span class="y">2026</span></div><div class="tz">Pick a day</div></div>
+      <div class="wd"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+      <div class="cal" id="grid"><div class="trail" id="ghost"></div><div class="disc" id="disc"></div></div>
+    </div>
+
+    <div class="col c3">
+      <div class="sh" id="sh">Tue, Nov 10</div>
+      <div class="ss" id="ss">6 slots · 30 min</div>
+      <div class="slots" id="slots"></div>
+    </div>
+  </div>
+
+  <div class="booked" id="booked">
+    <div class="badge" id="badge">
+      <div class="glow" id="bglow"></div><div class="bwave"></div><div class="bwave"></div>
+      <svg width="132" height="132" viewBox="0 0 132 132">
+        <circle cx="66" cy="66" r="60" fill="rgba(63,224,208,.08)" stroke="rgba(63,224,208,.18)" stroke-width="2"/>
+        <circle id="bring" cx="66" cy="66" r="60" fill="none" stroke="#3FE0D0" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90 66 66)"/>
+        <path id="bcheck" d="M41 68 L58 84 L92 49" fill="none" stroke="#3FE0D0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+      </svg>
+    </div>
+    <div class="bk">Booked</div>
+    <div class="bw">Design review with <b>Sana Velez</b></div>
+    <div class="when" id="when"><span id="wd">Fri, Nov 13</span><i></i><span id="wt">14:30–15:00</span></div>
+    <div class="acts">
+      <button class="btn add" id="add"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Add to calendar</span></button>
+      <button class="btn ghost again" id="again">Book another</button>
+    </div>
+  </div>
+
+  <div class="status-line"><span>Veraetogrex · T10</span><span>Book a review</span></div>
+</div>
+
+<script>window.AUTOPLAY = true;</script>
+<script src="_shared/stage.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const grid = $('#grid'), disc = $('#disc'), ghost = $('#ghost'), slotsEl = $('#slots');
+const box = $('#box'), cols = $('#cols'), booked = $('#booked');
+const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const FULL = new Set([4, 18, 26]);
+const POOL = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'];
+function slotsFor(d) {
+  if (d === 10) return ['09:00', '10:30', '11:00', '13:30', '15:00', '16:30'];
+  if (d === 13) return ['09:30', '11:00', '13:00', '14:30', '16:00', '17:30'];
+  const out = []; let k = (d * 7) % 3;
+  while (out.length < 6 && k < POOL.length) { out.push(POOL[k]); k += 2 + ((d + k) % 2); }
+  return out;
+}
+const dow = d => (d - 2 + 7 * 10) % 7;   // Nov 2, 2026 is a Monday
+
+// ---- calendar ----
+const cells = {};
+for (let d = 26; d <= 31; d++) { const b = document.createElement('div'); b.className = 'day out'; b.textContent = d; grid.appendChild(b); }
+for (let d = 1; d <= 30; d++) {
+  const b = document.createElement('button');
+  const wk = dow(d) >= 5, av = !wk && !FULL.has(d) && d >= 2;
+  b.className = 'day ' + (av ? 'av' : 'off');
+  b.textContent = d; b.dataset.d = d;
+  if (av) { b.addEventListener('click', () => pickDay(Stage.ctx(), d)); b.setAttribute('aria-label', `November ${d}`); }
+  else b.tabIndex = -1;
+  grid.appendChild(b); cells[d] = b;
+}
+const posOf = d => [cells[d].offsetLeft, cells[d].offsetTop];
+
+// ---- state ----
+let day = 10, slot = null, flying = null, phase = 'pick';
+
+function label(d) { return `${WD[dow(d)]}, Nov ${d}`; }
+function renderSlots(d, s) {
+  slotsEl.innerHTML = '';
+  slotsFor(d).forEach((t, k) => {
+    const r = document.createElement('div'); r.className = 'slot'; r.dataset.t = t;
+    r.innerHTML = `<button class="tm">${t}</button><button class="cf">Confirm</button>`;
+    r.querySelector('.tm').addEventListener('click', () => pickSlot(r));
+    r.querySelector('.cf').addEventListener('click', () => book(Stage.ctx()));
+    slotsEl.appendChild(r);
+    if (s) r.animate([{ opacity: 0, transform: 'translateY(18px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 40 + k * 55, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+  });
+  $('#sh').textContent = label(d);
+  $('#ss').textContent = `${slotsFor(d).length} slots · 30 min`;
+}
+function placeDisc(d) { const [x, y] = posOf(d); disc.style.transform = `translate(${x}px,${y}px)`; disc.style.zIndex = ''; }
+
+// FLIP flight along an arc
+async function pickDay(s, d) {
+  if (phase !== 'pick' || d === day) return;
+  const from = day; day = d; slot = null;
+  const [x0, y0] = posOf(from), [x1, y1] = posOf(d);
+  cells[from].classList.remove('sel');
+  // slots: old ones leave, new ones cascade in
+  const old = $$('.slot');
+  old.forEach((r, k) => r.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(16px)' }], { duration: 160, delay: k * 22, easing: 'ease-in', fill: 'forwards' }));
+  $('#sh').animate([{ opacity: 1 }, { opacity: 0 }, { opacity: 1 }], { duration: 380 });
+  s.later(() => renderSlots(d, true), 190);
+  // ghost ring at the origin
+  ghost.style.transform = `translate(${x0}px,${y0}px)`;
+  ghost.animate([{ opacity: .8, transform: `translate(${x0}px,${y0}px) scale(1)` }, { opacity: 0, transform: `translate(${x0}px,${y0}px) scale(1.5)` }], { duration: 500, easing: 'ease-out' });
+  const dist = Math.hypot(x1 - x0, y1 - y0), mx = (x0 + x1) / 2, my = (y0 + y1) / 2 - Math.max(40, dist * .45);
+  let landed = false;
+  disc.style.zIndex = 2;
+  const my_ = flying = s.tween(450, (t, p) => {
+    const u = 1 - t, x = u * u * x0 + 2 * u * t * mx + t * t * x1, y = u * u * y0 + 2 * u * t * my + t * t * y1;
+    const sc = 1 - .22 * Math.sin(Math.PI * p);
+    disc.style.transform = `translate(${x}px,${y}px) scale(${sc})`;
+    if (!landed && p > .72) { landed = true; cells[d].classList.add('sel'); disc.style.zIndex = ''; }
+  }, s.ease.inOut);
+  await my_;
+  await s.tween(220, t => disc.style.transform = `translate(${x1}px,${y1}px) scale(${1 + .1 * Math.sin(Math.PI * t)})`, s.ease.out);
+}
+
+function pickSlot(r) {
+  if (phase !== 'pick') return;
+  $$('.slot.sel').forEach(e => e !== r && e.classList.remove('sel'));
+  r.classList.toggle('sel');
+  slot = r.classList.contains('sel') ? r.dataset.t : null;
+}
+
+const BOX0 = { x: 170, y: 130, w: 1100, h: 640 }, BOX1 = { x: 440, y: 150, w: 560, h: 600 };
+function setBox(t) { const L = Stage.lerp; box.style.left = L(BOX0.x, BOX1.x, t) + 'px'; box.style.top = L(BOX0.y, BOX1.y, t) + 'px'; box.style.width = L(BOX0.w, BOX1.w, t) + 'px'; box.style.height = L(BOX0.h, BOX1.h, t) + 'px'; }
+const kids = () => [...booked.children];
+
+async function book(s) {
+  if (phase !== 'pick' || !slot) return;
+  phase = 'busy';
+  const [h, m] = slot.split(':').map(Number), end = h * 60 + m + 30;
+  $('#wd').textContent = label(day); $('#wt').textContent = `${slot}–${String(end / 60 | 0).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+  // collapse toward the centre: columns shrink and fade while the box morphs into the card
+  const morph = s.tween(560, (t, p) => {
+    setBox(t); const q = Math.min(1, p / .4);
+    cols.style.opacity = 1 - q; cols.style.transform = `scale(${1 - .1 * s.ease.out(q)})`;
+  }, s.ease.inOut);
+  await s.wait(330);
+  booked.classList.add('on');
+  const ring = $('#bring'), chk = $('#bcheck');
+  kids().forEach((e, k) => e.animate([{ opacity: 0, transform: k === 0 ? 'scale(.6)' : 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { duration: 460, delay: k === 0 ? 0 : 140 + k * 70, easing: k === 0 ? 'cubic-bezier(.34,1.56,.64,1)' : 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  await s.tween(440, t => ring.setAttribute('stroke-dashoffset', 100 - 100 * t), s.ease.inOut);
+  await morph; cols.style.visibility = 'hidden';
+  $('#bglow').style.opacity = 1;
+  $('#bglow').animate([{ opacity: 0, transform: 'scale(.8)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 500, easing: 'ease-out' });
+  flood(s);
+  await s.tween(380, t => chk.setAttribute('stroke-dashoffset', 100 - 100 * t), s.ease.out);
+  phase = 'booked';
+}
+
+function flood(s) {
+  const f = $('#flood'), waves = $$('.bwave');
+  box.classList.add('won');
+  s.tween(1200, (t, p) => {
+    f.style.transform = `scale(${.05 + .95 * t})`;
+    f.style.opacity = p < .12 ? p / .12 : 1 - .55 * (p - .12) / .88;
+  }, s.ease.out).catch(() => {});
+  const wave = w => s.tween(1100, (t, p) => { w.style.transform = `scale(${1 + 1.6 * t})`; w.style.opacity = .65 * (1 - p); }, s.ease.out).catch(() => {});
+  wave(waves[0]); s.later(() => wave(waves[1]), 180);
+}
+
+async function again(s) {
+  if (phase !== 'booked') return;
+  phase = 'busy';
+  const f0 = parseFloat($('#flood').style.opacity) || 0;
+  box.classList.remove('won');
+  s.tween(420, t => $('#flood').style.opacity = f0 * (1 - t), s.ease.out).catch(() => {});
+  const fade = s.tween(240, t => { booked.style.opacity = 1 - t; booked.style.filter = `blur(${t * 10}px)`; booked.style.transform = `scale(${1 - .05 * t})`; }, s.ease.in);
+  await s.wait(110);
+  const morph = s.tween(520, t => setBox(1 - t), s.ease.inOut);
+  await fade;
+  booked.classList.remove('on'); booked.style.opacity = ''; booked.style.filter = ''; booked.style.transform = '';
+  restoreCalendar();
+  await s.wait(30);
+  cols.style.visibility = ''; cols.style.opacity = 1;
+  cols.animate([{ transform: 'scale(.94)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  cols.style.transform = '';
+  $$('.col').forEach((c, k) => c.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: k * 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  await morph;
+  await s.wait(380);
+  phase = 'pick';
+}
+
+function restoreCalendar() {
+  Object.values(cells).forEach(c => c.classList.remove('sel'));
+  day = 10; slot = null; cells[10].classList.add('sel'); placeDisc(10);
+  renderSlots(10, false);
+  $('#bring').setAttribute('stroke-dashoffset', 100); $('#bcheck').setAttribute('stroke-dashoffset', 100); $('#bglow').style.opacity = 0;
+  $('#add span').textContent = 'Add to calendar';
+}
+
+$('#again').addEventListener('click', () => again(Stage.ctx()));
+$('#add').addEventListener('click', () => { $('#add span').textContent = 'Added ✓'; });
+
+function reset() {
+  phase = 'pick';
+  booked.classList.remove('on'); booked.style.opacity = ''; booked.style.filter = ''; booked.style.transform = '';
+  cols.style.visibility = ''; cols.style.opacity = 1; cols.style.transform = '';
+  setBox(0);
+  restoreCalendar();
+  $('#flood').style.opacity = 0; box.classList.remove('won');
+  $$('.bwave').forEach(w => w.style.opacity = 0);
+}
+
+const START = [1004, 826];
+Stage.init({
+  reset,
+  cursorStart: START,
+  async demo(s) {
+    const t0 = performance.now();
+    await s.wait(120);
+    await s.click(cells[13], { ms: 440 });                       // ≈0.65 s  pick the 13th
+    await s.until(t0, 960);
+    const r = $$('.slot').find(e => e.dataset.t === '14:30');
+    await s.click(r.querySelector('.tm'), { ms: 420, dx: -40 });   // ≈1.45 s  slot splits
+    await s.until(t0, 1880);
+    await s.click(r.querySelector('.cf'), { ms: 340 });           // ≈2.3 s  confirm -> collapse
+    await s.until(t0, 3880);
+    await s.click($('#again'), { ms: 420 });                     // ≈4.4 s  book another
+    await s.until(t0, 5080);
+    await s.move(START, 560, { arc: -.12 });
+    await s.until(t0, 6000);
+  },
+});
+</script>
+</body>
+</html>
