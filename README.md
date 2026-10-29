@@ -2,7 +2,7 @@
 
 **Pick a day, pick a slot, done.**
 
-![Slot Booking preview](preview.jpg)
+![Slot Booking preview](preview.gif)
 
 **Live demo:** [veraetogrex-portfolio.github.io/slot-booking](https://veraetogrex-portfolio.github.io/slot-booking/) · **Mockup:** [full-screen version](https://veraetogrex-portfolio.github.io/slot-booking/mockup/slot-booking.html)
 
